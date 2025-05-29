@@ -1,26 +1,34 @@
 <!DOCTYPE html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>RAG AH RA</title>
     <link rel="shortcut icon" href="#" />
-    <title>RAG AH RA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="body.css">
 </head>
-
 <body>
-     <div id="game-text">
-        <p>ESCAPE THE AFTERS</p>
-    </div>
- 
-    <input id="user-input" placeholder="Please type your command.."></input>
+<main id="game-text">
+    <h1 id="game-title">ESCAPE THE AFTERS</h1>
+</main>
+<input id="user-input" type="text" placeholder="Please type your command..." aria-label="Enter your command here">
+<button onclick="submitCommand()" aria-label="Submit your command">Submit</button>
+<p>Type <b>help</b> for possible commands, use the commands in <b>bold</b to progress</p>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="room.js"></script>
+<script src="conversations.js"></script>
+<script src="script.js"></script>
+<script>
+function submitCommand() {
+    var input = $('#user-input').val().trim();
+    if (input !== "") {
+        processInput(input);
+        $('#user-input').val(''); // Clearing the input field after processing
+    }
+}
 
-    
-        <p>type <b>help</b> for possible commands, use the commands on the text in <b>bold</b> to progress  </p>
-    
-
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="room.js"></script>
-    <script type="text/javascript" src="Conversations.js"></script>
-    <script type="text/javascript" src="script.js"></script>
-   
-
+// Assumes processInput is defined in script.js, handling game logic based on input
+</script>
 </body>
-
+</html>
