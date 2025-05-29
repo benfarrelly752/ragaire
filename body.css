@@ -1,8 +1,39 @@
-body 
-{
-background-image: url('https://i.redd.it/f30q9d8i39d91.gif');
-background-size: cover;
-padding-left: 11em;
-padding-right: 20em;
+body {
+    display: flex;
+    flex-direction: column; /* Changes layout to vertical stacking */
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100%;
+    margin: 0;
+    background-color: black;
+    color: #33ff33;
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+}
 
+#game-text {
+    width: 90%;
+    max-width: 800px;
+    margin-bottom: 20px;  /* Adds space between the text area and input */
+    text-align: left;
+    background-color: rgba(0, 0, 0, 0.75);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 255, 0, 0.3);
+    overflow-y: auto;
+}
+
+input, button {
+    font-family: 'Courier New', Courier, monospace;
+    color: #33ff33;
+    background-color: #000;
+    border: 1px solid #33ff33;
+    padding: 10px;
+    width: 90%;  /* Ensures input and button take full width */
+    max-width: 800px;
+}
+
+input {
+    margin-bottom: 10px;  /* Separates the input from the button */
 }
