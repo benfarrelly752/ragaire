@@ -31,7 +31,7 @@ document.addEventListener('keydown', function (e) {
 
     function scatter() {
         var rand = makeRng(17);
-        var fw = field.offsetWidth;
+        var fw = field.offsetWidth || window.innerWidth;
         var canvasH = window.innerHeight - 120;
         field.style.height = canvasH + 'px';
         tileData = [];
@@ -191,10 +191,19 @@ document.addEventListener('keydown', function (e) {
         return resizeCanvas;
     }
 
-    scatter();
-    initHover();
-    initLightbox();
-    var refreshLines = initConspiracy();
+    var refreshLines;
+
+    function init() {
+        scatter();
+        initHover();
+        initLightbox();
+        refreshLines = initConspiracy();
+    }
+
+    // defer until after first paint so offsetWidth is reliable
+    requestAnimationFrame(function () {
+        requestAnimationFrame(init);
+    });
 
     var resizeTimer;
     window.addEventListener('resize', function () {
