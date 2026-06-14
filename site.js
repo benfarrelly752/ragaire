@@ -36,8 +36,9 @@ document.addEventListener('keydown', function (e) {
         field.style.height = canvasH + 'px';
         tileData = [];
 
-        var minW = Math.max(70, fw * 0.08);
-        var maxW = Math.min(200, fw * 0.22);
+        var isMobile = fw < 600;
+        var minW = isMobile ? Math.max(100, fw * 0.22) : Math.max(70, fw * 0.08);
+        var maxW = isMobile ? Math.min(fw * 0.55, 260) : Math.min(200, fw * 0.22);
 
         tiles.forEach(function (tile, i) {
             var w = minW + rand() * (maxW - minW);
@@ -95,7 +96,8 @@ document.addEventListener('keydown', function (e) {
                 if (lbFrame) { lbFrame.style.display = 'none'; lbFrame.src = ''; }
                 lbVideo.style.display = 'block';
                 lbVideo.src = localUrl;
-                lbVideo.play();
+                var p = lbVideo.play();
+                if (p && p.catch) p.catch(function () {});
             } else if (embedUrl && lbFrame) {
                 lbImg.style.display = 'none';
                 if (lbVideo) { lbVideo.style.display = 'none'; lbVideo.pause(); lbVideo.src = ''; }
@@ -160,17 +162,24 @@ document.addEventListener('keydown', function (e) {
             }
         });
 
+        var dpr = window.devicePixelRatio || 1;
+
         function resizeCanvas() {
-            canvas.width = field.offsetWidth;
-            canvas.height = field.offsetHeight;
+            var w = field.offsetWidth;
+            var h = field.offsetHeight;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            ctx.scale(dpr, dpr);
         }
         resizeCanvas();
 
         var t = 0;
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, field.offsetWidth, field.offsetHeight);
             t += 0.012;
-            ctx.lineWidth = 0.7;
+            ctx.lineWidth = 1.5;
             connections.forEach(function (conn) {
                 var ta = tiles[conn.a];
                 var tb = tiles[conn.b];
@@ -200,10 +209,7 @@ document.addEventListener('keydown', function (e) {
         refreshLines = initConspiracy();
     }
 
-    // defer until after first paint so offsetWidth is reliable
-    requestAnimationFrame(function () {
-        requestAnimationFrame(init);
-    });
+    window.addEventListener('load', init);
 
     var resizeTimer;
     window.addEventListener('resize', function () {
