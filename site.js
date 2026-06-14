@@ -32,18 +32,33 @@ document.addEventListener('keydown', function (e) {
     function scatter() {
         var rand = makeRng(17);
         var fw = field.offsetWidth || window.innerWidth;
-        var canvasH = window.innerHeight - 120;
-        field.style.height = canvasH + 'px';
+        var isMobile = fw < 600;
         tileData = [];
 
-        var isMobile = fw < 600;
-        var minW = isMobile ? Math.max(100, fw * 0.22) : Math.max(70, fw * 0.08);
-        var maxW = isMobile ? Math.min(fw * 0.55, 260) : Math.min(200, fw * 0.22);
+        var minW, maxW, canvasH;
+        if (isMobile) {
+            minW = Math.max(120, fw * 0.28);
+            maxW = Math.min(fw * 0.70, 300);
+            canvasH = tiles.length * 110;
+        } else {
+            minW = Math.max(70, fw * 0.08);
+            maxW = Math.min(200, fw * 0.22);
+            canvasH = window.innerHeight - 120;
+        }
+
+        field.style.height = canvasH + 'px';
 
         tiles.forEach(function (tile, i) {
             var w = minW + rand() * (maxW - minW);
             var left = rand() * Math.max(0, fw - w - 10);
-            var top = rand() * Math.max(0, canvasH - 80);
+            var top;
+            if (isMobile) {
+                var rowH = 110;
+                var baseTop = (i / tiles.length) * (canvasH - rowH);
+                top = Math.max(0, baseTop + (rand() - 0.5) * rowH * 1.6);
+            } else {
+                top = rand() * Math.max(0, canvasH - 80);
+            }
             var rot = (rand() - 0.5) * 30;
             var baseT = 'rotate(' + rot.toFixed(2) + 'deg)';
 
