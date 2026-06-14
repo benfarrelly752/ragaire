@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ragaire — escape the afters</title>
+    <link rel="shortcut icon" href="assets/logo.gif" />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="body.css">
+    <style>
+        /* keep the game centred but make room for a small nav back to the site */
+        .game-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            padding: 12px 18px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            background: rgba(0,0,0,0.85);
+            z-index: 10;
+        }
+        .game-nav a { color: #33ff33; text-decoration: none; }
+        .game-nav a:hover { text-decoration: underline; }
+        .game-nav img { height: 22px; image-rendering: pixelated; filter: invert(1); }
+        body { padding-top: 56px; }
+    </style>
+</head>
+<body>
+<nav class="game-nav">
+    <a href="index.html"><img src="assets/logo.gif" alt="ragaire"></a>
+    <a href="index.html">home</a>
+    <a href="shop.html">shop</a>
+    <a href="archive.html">archive</a>
+    <a href="why.html">why</a>
+</nav>
+<main id="game-text">
+    <h1 id="game-title">ESCAPE THE AFTERS</h1>
+</main>
+<input id="user-input" type="text" placeholder="Please type your command..." aria-label="Enter your command here">
+<button onclick="submitCommand()" aria-label="Submit your command">Submit</button>
+<p>Type <b>help</b> for possible commands, use the commands in <b>bold</b> to progress</p>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="room.js"></script>
+<script src="conversations.js"></script>
+<script src="script.js"></script>
+<script>
+function submitCommand() {
+    var input = $('#user-input').val().trim();
+    if (input !== "") {
+        playerInput(input.toLowerCase());
+        $('#user-input').val(''); // Clearing the input field after processing
+    }
+}
+</script>
+</body>
+</html>
