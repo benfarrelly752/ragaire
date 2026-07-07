@@ -57,6 +57,15 @@ python tools/optimize.py
 ~300KB, converts opaque PNGs to JPG when smaller, compresses video to 720p,
 moves originals to `assets/originals/`, and rewrites HTML references.
 
+The archive wall never loads full images: tiles use pixelated micro-thumbs
+from `assets/web/thumbs/` (~2KB each, `image-rendering: pixelated`; a seeded
+1-in-5 are 18px wide — deliberately fogged). The lightbox loads the real
+file from `data-full` on click. After adding to the manifest, regenerate:
+
+```
+python tools/thumbs.py
+```
+
 ## Cart / checkout model
 
 localStorage key `ragaire-cart` = `{productId: qty}`. Checkout is per-item

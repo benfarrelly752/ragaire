@@ -208,17 +208,24 @@
             'latest drop — ' + esc(p.name) + ' · ' + euro(p.price) + ' →</a>';
     }
 
+    // the wall shows pixelated thumbs (assets/web/thumbs/, ~2KB each, some
+    // deliberately fogged) — the lightbox loads the real file on click
+    function thumbOf(src) {
+        var base = src.split('/').pop().replace(/\.[^.]+$/, '');
+        return 'assets/web/thumbs/' + base + '.jpg';
+    }
+
     function renderArchiveTiles() {
         var field = document.querySelector('.scatter-field');
         if (!field || !R.archive) return;
         var html = R.archive.map(function (e) {
             if (e.video) {
                 return '<div class="scatter-tile" data-local-video="' + esc(e.video) + '">' +
-                    '<video src="' + esc(e.video) + '" muted preload="metadata"></video>' +
+                    '<img src="' + esc(thumbOf(e.video)) + '" alt="' + esc(e.cap || '') + '" loading="lazy">' +
                     '<span class="s-cap">▶ ' + esc(e.cap || '') + '</span></div>';
             }
-            return '<div class="scatter-tile">' +
-                '<img src="' + esc(e.src) + '" alt="' + esc(e.cap || '') + '" loading="lazy">' +
+            return '<div class="scatter-tile" data-full="' + esc(e.src) + '">' +
+                '<img src="' + esc(thumbOf(e.src)) + '" alt="' + esc(e.cap || '') + '" loading="lazy">' +
                 '<span class="s-cap">' + esc(e.cap || '') + '</span></div>';
         }).join('');
         field.insertAdjacentHTML('beforeend', html);
@@ -310,8 +317,10 @@
             var lbFrame = lb.querySelector('iframe');
             var lbVideo = lb.querySelector('video');
             var lbCap = lb.querySelector('.lightbox-cap');
+            var openedAt = 0;
 
             function open(tile) {
+                openedAt = Date.now();
                 var img = tile.querySelector('img');
                 var thumbVideo = tile.querySelector('video');
                 var cap = tile.querySelector('.s-cap');
@@ -335,7 +344,9 @@
                     if (lbFrame) { lbFrame.style.display = 'none'; lbFrame.src = ''; }
                     if (lbVideo) { lbVideo.style.display = 'none'; lbVideo.pause(); lbVideo.src = ''; }
                     lbImg.style.display = 'block';
-                    lbImg.src = img ? img.src : (thumbVideo ? thumbVideo.src : '');
+                    // the tile is a pixelated thumb — the lightbox gets the real thing
+                    var full = tile.getAttribute('data-full');
+                    lbImg.src = full || (img ? img.src : (thumbVideo ? thumbVideo.src : ''));
                     lbImg.alt = img ? (img.alt || '') : '';
                 }
                 lb.classList.add('is-open');
@@ -354,6 +365,7 @@
             });
 
             lb.addEventListener('click', function (e) {
+                if (Date.now() - openedAt < 250) return; // swallow the opening click's echo
                 if (e.target === lb || e.target.classList.contains('lightbox-close')) close();
             });
 

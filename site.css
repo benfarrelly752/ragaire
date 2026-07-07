@@ -336,6 +336,8 @@ main.page {
     box-shadow: 4px 6px 24px rgba(0,0,0,0.8);
     border: 1px solid #1c1c1c;
     pointer-events: none;
+    /* tiles are tiny thumbs blown up — keep the pixels hard, that's the point */
+    image-rendering: pixelated;
 }
 
 .s-cap {
