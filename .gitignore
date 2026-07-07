@@ -1,13 +1,7 @@
-assets/final44.mp4
-assets/IMG_5219.png
-assets/abhartach_color.jpg
-
-# design source files — keep locally, don't commit (huge / not used by the site)
-*.psd
-assets/template.png
-assets/f7dec228f8764b1da8e09632c2c7a8e0.mov
-assets/PSD OF DESIGN-Recovered.png
-assets/puppet drawing with template.png
+# full-size originals and design sources live here — local only, never committed.
+# the site only ever references the optimized copies in assets/web/
+# (regenerate them with: python tools/optimize.py)
+assets/originals/
 
 # OS junk
 Thumbs.db
