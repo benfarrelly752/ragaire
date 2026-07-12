@@ -11,15 +11,9 @@ const appendToGameText = (text) => {
     $('#game-text').append(`<p>${text}</p>`);
 };
 
-const updateBackground = (room) => {
-    const description = `Image of ${room} in an immersive text adventure game.`;
-    fetch(`/generate-image?description=${encodeURIComponent(description)}`)
-    .then(response => response.json())
-    .then(data => {
-        $('body').css('background-image', `url(${data.imageUrl})`);
-    })
-    .catch(error => console.error('Error fetching image:', error));
-};
+// rooms are text. the pictures happen in your head. (an old /generate-image
+// server endpoint used to be fetched here — it never existed, only 404s.)
+const updateBackground = (room) => {};
 
 // Command functions leveraging new gameState and helper function
 function pickup(item) {

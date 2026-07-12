@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ragaire — lost</title>
+    <meta name="description" content="there is nothing here.">
+    <link rel="shortcut icon" href="assets/web/logo.gif" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="site.css">
+    <style>
+        .lost {
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 22px;
+            text-align: center;
+            padding: 0 24px;
+        }
+        .lost h1 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 500;
+            font-size: clamp(40px, 9vw, 90px);
+            margin: 0;
+            transform: rotate(-2deg);
+        }
+        .lost p { opacity: 0.5; font-size: 15px; line-height: 1.8; max-width: 380px; margin: 0; }
+        .lost img { width: 90px; transform: rotate(4deg); opacity: 0.85; }
+        .lost a { color: #fff; }
+        .lost a:hover { color: var(--accent); }
+    </style>
+</head>
+<body>
+<!-- header / menu / cart injected by site.js -->
+
+<main class="page">
+    <div class="lost">
+        <img src="assets/web/logo.gif" alt="">
+        <h1>you're lost</h1>
+        <p>this page left the afters early and nobody has seen it since.
+           <a href="index.html">go back to the start</a> or
+           <a href="game.html">try to escape properly</a>.</p>
+    </div>
+</main>
+
+<footer class="site-footer">ragaire — 404</footer>
+
+<script src="products.js"></script>
+<script src="site.js"></script>
+</body>
+</html>

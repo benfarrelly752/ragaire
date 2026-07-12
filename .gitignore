@@ -1,3 +1,9 @@
-assets/final44.mp4
-assets/IMG_5219.png
-assets/abhartach_color.jpg
+# full-size originals and design sources live here — local only, never committed.
+# the site only ever references the optimized copies in assets/web/
+# (regenerate them with: python tools/optimize.py)
+assets/originals/
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
