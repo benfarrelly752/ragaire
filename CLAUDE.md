@@ -89,5 +89,18 @@ words. Stock is manual: flip `soldout: true` in products.js.
   `.scatter-field` has `isolation: isolate` so tile z-indexes can't poke
   through the header/menu. Re-scatter only on width change (mobile url bars
   fire height-only resizes while scrolling).
+- Archive tiles drift (`initDrift` in site.js): JS sets a target 5×/s for
+  tiles near the screen, CSS `transition: linear` glides between, the string
+  redraws on the same beat. Don't move tiles per-frame from JS. Tile z-order
+  shuffles; hover uses z 100000 so it always wins.
+- Glitches (site.js §5) are rare by design: first 20–60s in, then every
+  40–150s. `?glitch` in the URL = every ~2s for testing; `ragaire.glitch()`
+  in the console fires one.
+- Shop cards tilt by a hash of the product id (same every visit). Optional
+  `note:` on a product renders a small line under its name. Sold-out items
+  say "gone. ask someone who has one." — change it in `renderShop`.
+- Pages carry og:/twitter: link-preview tags; `og:image` is relative until
+  the real domain is known — swap in the full https:// URL then.
+- Everything that moves respects `prefers-reduced-motion`.
 - Game JS defines `playerInput()`; the game page's submit button must call
   that (an older `processInput` name never existed).

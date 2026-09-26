@@ -20,8 +20,8 @@ body {
     text-align: left;
     background-color: rgba(0, 0, 0, 0.75);
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 255, 0, 0.3);
+    border: 1px solid rgba(51, 255, 51, 0.35);
+    box-shadow: 4px 5px 0 rgba(51, 255, 51, 0.08); /* a terminal, not an app */
     overflow-y: auto;
     /* the story scrolls inside its box — the old full-height centred body
        pushed the start of the text off the top where you couldn't reach it */
@@ -53,3 +53,13 @@ input:focus, button:focus-visible { outline: 1px dashed #33ff33; outline-offset:
 @media (hover: none) {
     input, button { font-size: 16px; }
 }
+
+/* the title flickers in like an old monitor warming up */
+#game-title { animation: warm 0.9s steps(4, jump-end) both; letter-spacing: 0.04em; }
+@keyframes warm { 0% { opacity: 0; } 30% { opacity: 0.8; } 45% { opacity: 0.2; } 100% { opacity: 1; } }
+input { caret-color: #33ff33; }
+input::placeholder { color: rgba(51, 255, 51, 0.45); }
+button { cursor: pointer; }
+button:hover { background: #33ff33; color: #000; }
+::selection { background: #33ff33; color: #000; }
+@media (prefers-reduced-motion: reduce) { #game-title { animation: none; } }

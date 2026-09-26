@@ -197,18 +197,63 @@
     function renderShop() {
         var grid = document.querySelector('.product-grid');
         if (!grid || !R.products) return;
+        // every card hangs a little crooked — seeded by id so it's the same every visit
+        function tilt(id) {
+            var h = 0;
+            for (var k = 0; k < id.length; k++) h = (h * 31 + id.charCodeAt(k)) >>> 0;
+            return ((h % 1000) / 1000 - 0.5) * 3.2; // ±1.6deg
+        }
         grid.innerHTML = R.products.map(function (p) {
             var action = p.soldout
-                ? '<span class="soldout">sold out</span>'
+                ? '<span class="soldout">gone. ask someone who has one.</span>'
                 : '<button class="buy" type="button" data-add="' + esc(p.id) + '">add to cart</button>';
-            return '<article class="product">' +
-                '<div class="product-thumb"><img src="' + esc(p.img) + '" alt="' + esc(p.name) + '" loading="lazy"></div>' +
+            return '<article class="product' + (p.soldout ? ' is-soldout' : '') + '" style="--tilt:' + tilt(p.id).toFixed(2) + 'deg">' +
+                '<button class="product-thumb" type="button" data-zoom="' + esc(p.img) + '" aria-label="look closer at ' + esc(p.name) + '">' +
+                    '<img src="' + esc(p.img) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async">' +
+                '</button>' +
                 '<div class="product-info"><h3>' + esc(p.name) + '</h3><span class="price">' + euro(p.price) + '</span></div>' +
+                (p.note ? '<p class="product-note">' + esc(p.note) + '</p>' : '') +
                 action +
             '</article>';
         }).join('');
         grid.querySelectorAll('[data-add]').forEach(function (b) {
-            b.addEventListener('click', function () { addToCart(b.getAttribute('data-add')); });
+            b.addEventListener('click', function () {
+                addToCart(b.getAttribute('data-add'));
+                b.textContent = 'in the bag';
+                b.classList.add('is-added');
+                setTimeout(function () { b.textContent = 'add another'; b.classList.remove('is-added'); }, 1400);
+            });
+        });
+        initZoom(grid);
+    }
+
+    function initZoom(scope) {
+        var box = document.createElement('div');
+        box.className = 'zoom';
+        box.setAttribute('role', 'dialog');
+        box.setAttribute('aria-modal', 'true');
+        box.setAttribute('aria-label', 'image viewer');
+        box.innerHTML = '<button class="lightbox-close" type="button" aria-label="close">&#x2715;</button><img alt="">';
+        document.body.appendChild(box);
+        var img = box.querySelector('img'), back = null;
+        function close() {
+            box.classList.remove('is-open');
+            document.body.classList.remove('lightbox-open');
+            if (back) back.focus({ preventScroll: true });
+        }
+        scope.querySelectorAll('[data-zoom]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                back = b;
+                img.src = b.getAttribute('data-zoom');
+                img.alt = b.querySelector('img') ? b.querySelector('img').alt : '';
+                box.classList.add('is-open');
+                document.body.classList.add('lightbox-open');
+                box.querySelector('.lightbox-close').focus({ preventScroll: true, focusVisible: false });
+            });
+        });
+        box.addEventListener('click', function (e) { if (e.target !== img) close(); });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && box.classList.contains('is-open')) close();
         });
     }
 
@@ -784,12 +829,38 @@
         scheduleGlitch(true);
     }
 
+    function initWhy() {
+        var p = document.querySelector('.why-wrap p');
+        if (!p || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+        var words = p.textContent.trim().split(/\s+/);
+        p.setAttribute('aria-label', p.textContent.trim());
+        var t = 350;
+        p.innerHTML = words.map(function (w, i) {
+            var html = '<span class="w" aria-hidden="true" style="animation-delay:' + Math.round(t) + 'ms">' + esc(w) + '</span>';
+            // uneven gaps — someone thinking, not a typewriter. longer after a full stop.
+            t += 120 + Math.random() * 80 + (/[.]$/.test(w) ? 650 : /[,;]$/.test(w) ? 300 : 0);
+            return html;
+        }).join(' ');
+    }
+
+    // images fade up once they've actually arrived (no half-painted pop-in)
+    function initImageArrival() {
+        document.documentElement.classList.add('js');
+        document.querySelectorAll('.product-thumb img, .archive-wall img').forEach(function (im) {
+            if (im.complete && im.naturalWidth) { im.classList.add('is-in'); return; }
+            im.addEventListener('load', function () { im.classList.add('is-in'); });
+            im.addEventListener('error', function () { im.classList.add('is-in'); });
+        });
+    }
+
     /* ===================================================== */
     function boot() {
         injectChrome();
         updateCount();
         renderShop();
         renderLatestDrop();
+        initWhy();
+        initImageArrival();
         renderArchiveTiles();
         initArchive();
         initGlitch();
