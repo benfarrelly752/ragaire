@@ -81,5 +81,13 @@ words. Stock is manual: flip `soldout: true` in products.js.
 - Git history still contains the old heavy originals (~380MB). Fresh clones
   are slow; a history rewrite (`git filter-repo`) would fix it but rewrites
   shared history — do it deliberately or never.
+- Archive red string = three viewport-sized `position: fixed` canvases
+  behind the wall, redrawn only on scroll/resize (and only strings on
+  screen); the pulse is a CSS opacity animation per canvas. **Never** size
+  the canvas to the whole wall or redraw it per frame — that was the
+  archive stutter (28M-pixel canvas on phones, past iOS's limit).
+  `.scatter-field` has `isolation: isolate` so tile z-indexes can't poke
+  through the header/menu. Re-scatter only on width change (mobile url bars
+  fire height-only resizes while scrolling).
 - Game JS defines `playerInput()`; the game page's submit button must call
   that (an older `processInput` name never existed).

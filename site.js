@@ -82,6 +82,13 @@
             document.body.classList.remove('cart-open');
         });
 
+        // cart changed in another tab — keep this one honest
+        window.addEventListener('storage', function (e) {
+            if (e.key !== CART_KEY) return;
+            updateCount();
+            if (document.body.classList.contains('cart-open')) renderCart();
+        });
+
         document.addEventListener('keydown', function (e) {
             if (e.key !== 'Escape') return;
             document.body.classList.remove('menu-open');
@@ -101,7 +108,8 @@
         catch (e) { return {}; }
     }
     function saveCart(c) {
-        localStorage.setItem(CART_KEY, JSON.stringify(c));
+        try { localStorage.setItem(CART_KEY, JSON.stringify(c)); }
+        catch (e) { /* private mode / storage off — cart lives for this page only */ }
         updateCount();
     }
     function cartQty(c) {
@@ -240,6 +248,14 @@
 
         var tiles = Array.prototype.slice.call(field.querySelectorAll('.scatter-tile'));
         var tileData = [];
+        var lastW = 0;          // only re-scatter when the WIDTH changes — mobile
+                                // url bars fire resize on every scroll otherwise
+        var lines = null;       // conspiracy-line controller (set below)
+
+        tiles.forEach(function (tile) {
+            tile.setAttribute('tabindex', '0');
+            tile.setAttribute('role', 'button');
+        });
 
         function makeRng(seed) {
             var s = seed >>> 0;
@@ -252,6 +268,7 @@
         function scatter() {
             var rand = makeRng(17);
             var fw = field.offsetWidth || window.innerWidth;
+            lastW = fw;
             var isMobile = fw < 600;
             tileData = [];
 
@@ -287,26 +304,44 @@
                 tile.style.top = top + 'px';
                 tile.style.transform = baseT;
                 tile.style.zIndex = i + 1;
-                tileData.push({ baseT: baseT, z: i + 1 });
+                // pin position cached here so the string never has to
+                // measure the DOM while it animates
+                tileData.push({ baseT: baseT, z: i + 1, px: left + w / 2, py: top + 4 });
             });
+        }
+
+        // warm the real file on hover so the lightbox opens without a wait
+        var warmed = {};
+        function warm(tile) {
+            var full = tile.getAttribute('data-full');
+            if (!full || warmed[full]) return;
+            warmed[full] = true;
+            var im = new Image();
+            im.decoding = 'async';
+            im.src = full;
         }
 
         function initHover() {
             tiles.forEach(function (tile, i) {
-                tile.addEventListener('mouseenter', function () {
+                function lift() {
                     var d = tileData[i];
                     if (!d) return;
                     tile.style.transition = 'transform 0.18s ease';
                     tile.style.transform = d.baseT + ' scale(1.06)';
                     tile.style.zIndex = 200;
-                });
-                tile.addEventListener('mouseleave', function () {
+                    warm(tile);
+                }
+                function drop() {
                     var d = tileData[i];
                     if (!d) return;
                     tile.style.transition = 'transform 0.18s ease';
                     tile.style.transform = d.baseT;
                     tile.style.zIndex = d.z;
-                });
+                }
+                tile.addEventListener('mouseenter', lift);
+                tile.addEventListener('mouseleave', drop);
+                tile.addEventListener('focus', lift);
+                tile.addEventListener('blur', drop);
             });
         }
 
@@ -318,50 +353,90 @@
             var lbVideo = lb.querySelector('video');
             var lbCap = lb.querySelector('.lightbox-cap');
             var openedAt = 0;
+            var current = -1;
+            var returnFocus = null;
+            var loadToken = 0;
 
-            function open(tile) {
-                openedAt = Date.now();
+            function hideMedia() {
+                if (lbFrame) { lbFrame.style.display = 'none'; lbFrame.src = ''; }
+                if (lbVideo) { lbVideo.style.display = 'none'; lbVideo.pause(); lbVideo.removeAttribute('src'); lbVideo.load(); }
+                lbImg.style.display = 'none';
+            }
+
+            function show(i) {
+                var tile = tiles[i];
+                if (!tile) return;
+                current = i;
                 var img = tile.querySelector('img');
-                var thumbVideo = tile.querySelector('video');
                 var cap = tile.querySelector('.s-cap');
                 var embedUrl = tile.getAttribute('data-video');
                 var localUrl = tile.getAttribute('data-local-video');
-                if (lbCap) lbCap.textContent = cap ? cap.textContent : '';
+                if (lbCap) lbCap.textContent = cap ? cap.textContent.trim() : '';
+                hideMedia();
 
                 if (localUrl && lbVideo) {
-                    lbImg.style.display = 'none';
-                    if (lbFrame) { lbFrame.style.display = 'none'; lbFrame.src = ''; }
                     lbVideo.style.display = 'block';
                     lbVideo.src = localUrl;
                     var p = lbVideo.play();
                     if (p && p.catch) p.catch(function () {});
                 } else if (embedUrl && lbFrame) {
-                    lbImg.style.display = 'none';
-                    if (lbVideo) { lbVideo.style.display = 'none'; lbVideo.pause(); lbVideo.src = ''; }
                     lbFrame.style.display = 'block';
                     lbFrame.src = embedUrl + (embedUrl.indexOf('?') > -1 ? '&' : '?') + 'autoplay=1';
                 } else {
-                    if (lbFrame) { lbFrame.style.display = 'none'; lbFrame.src = ''; }
-                    if (lbVideo) { lbVideo.style.display = 'none'; lbVideo.pause(); lbVideo.src = ''; }
-                    lbImg.style.display = 'block';
-                    // the tile is a pixelated thumb — the lightbox gets the real thing
+                    // the fog clears: the pixel thumb goes up instantly (it's
+                    // already cached), the real file swaps in once decoded
                     var full = tile.getAttribute('data-full');
-                    lbImg.src = full || (img ? img.src : (thumbVideo ? thumbVideo.src : ''));
+                    var token = ++loadToken;
                     lbImg.alt = img ? (img.alt || '') : '';
+                    lbImg.src = img ? img.currentSrc || img.src : '';
+                    lbImg.classList.add('is-fog');
+                    lbImg.style.display = 'block';
+                    if (full) {
+                        var real = new Image();
+                        real.onload = function () {
+                            if (token !== loadToken) return; // they moved on
+                            lbImg.src = full;
+                            lbImg.classList.remove('is-fog');
+                        };
+                        real.src = full;
+                    }
+                    // and get the neighbours ready
+                    if (tiles[i + 1]) warm(tiles[i + 1]);
+                    if (tiles[i - 1]) warm(tiles[i - 1]);
                 }
+            }
+
+            function open(i) {
+                openedAt = Date.now();
+                returnFocus = tiles[i];
+                show(i);
                 lb.classList.add('is-open');
-                document.body.style.overflow = 'hidden';
+                document.body.classList.add('lightbox-open');
+                if (lines) lines.pause();
+                var closeBtn = lb.querySelector('.lightbox-close');
+                if (closeBtn) closeBtn.focus({ preventScroll: true, focusVisible: false });
             }
 
             function close() {
+                if (!lb.classList.contains('is-open')) return;
                 lb.classList.remove('is-open');
-                if (lbFrame) lbFrame.src = '';
-                if (lbVideo) { lbVideo.pause(); lbVideo.src = ''; }
-                document.body.style.overflow = '';
+                loadToken++;
+                hideMedia();
+                document.body.classList.remove('lightbox-open');
+                if (lines) lines.resume();
+                if (returnFocus) returnFocus.focus({ preventScroll: true });
             }
 
-            tiles.forEach(function (tile) {
-                tile.addEventListener('click', function () { open(tile); });
+            function step(d) {
+                if (current < 0) return;
+                show((current + d + tiles.length) % tiles.length);
+            }
+
+            tiles.forEach(function (tile, i) {
+                tile.addEventListener('click', function () { open(i); });
+                tile.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(i); }
+                });
             });
 
             lb.addEventListener('click', function (e) {
@@ -370,14 +445,39 @@
             });
 
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && lb.classList.contains('is-open')) close();
+                if (!lb.classList.contains('is-open')) return;
+                if (e.key === 'Escape') close();
+                else if (e.key === 'ArrowRight') step(1);
+                else if (e.key === 'ArrowLeft') step(-1);
             });
+
+            // thumb-swipe between pieces on phones
+            var sx = null, sy = null;
+            lb.addEventListener('touchstart', function (e) {
+                if (e.touches.length !== 1) return;
+                sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+            }, { passive: true });
+            lb.addEventListener('touchend', function (e) {
+                if (sx === null) return;
+                var dx = e.changedTouches[0].clientX - sx;
+                var dy = e.changedTouches[0].clientY - sy;
+                sx = sy = null;
+                if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    openedAt = Date.now(); // don't let the swipe's click close it
+                    step(dx < 0 ? 1 : -1);
+                }
+            }, { passive: true });
         }
 
+        /* the red string. drawn once into three viewport-sized canvases
+           pinned behind the wall; each canvas breathes on its own CSS
+           opacity cycle, so the pulse costs the CPU nothing. redraws happen
+           only on scroll/resize and only for strings on screen. (the old
+           version redrew a canvas the size of the whole wall every frame —
+           28M pixels on a phone, past what iOS will even allocate.) */
         function initConspiracy() {
-            var canvas = document.getElementById('conspiracy-lines');
-            if (!canvas) return null;
-            var ctx = canvas.getContext('2d');
+            var base = document.getElementById('conspiracy-lines');
+            if (!base || !base.getContext) return null;
 
             tiles.forEach(function (tile) {
                 if (!tile.querySelector('.pin')) {
@@ -398,64 +498,112 @@
                     var key = Math.min(i, j) + '-' + Math.max(i, j);
                     if (added[key]) continue;
                     added[key] = true;
-                    connections.push({ a: i, b: j, phase: rand2() * Math.PI * 2 });
+                    connections.push({ a: i, b: j, g: Math.floor(rand2() * 3) });
                 }
             });
 
-            var dpr = window.devicePixelRatio || 1;
+            // three layers, three pulse phases
+            var layers = [base];
+            for (var n = 1; n < 3; n++) {
+                var c2 = base.cloneNode(false);
+                c2.removeAttribute('id');
+                c2.className = 'conspiracy-layer';
+                base.parentNode.insertBefore(c2, base.nextSibling);
+                layers.push(c2);
+            }
+            layers.forEach(function (c, k) { c.setAttribute('data-phase', k); });
+            var ctxs = layers.map(function (c) { return c.getContext('2d'); });
+
+            var vw = 0, vh = 0, dirty = true, queued = false, visible = true;
 
             function resizeCanvas() {
-                var w = field.offsetWidth;
-                var h = field.offsetHeight;
-                canvas.width = w * dpr;
-                canvas.height = h * dpr;
-                canvas.style.width = w + 'px';
-                canvas.style.height = h + 'px';
-                ctx.scale(dpr, dpr);
+                var dpr = Math.min(window.devicePixelRatio || 1, 2); // a thin red line doesn't need 3x
+                vw = window.innerWidth;
+                vh = window.innerHeight;
+                layers.forEach(function (c, k) {
+                    c.width = Math.round(vw * dpr);
+                    c.height = Math.round(vh * dpr);
+                    c.style.width = vw + 'px';
+                    c.style.height = vh + 'px';
+                    ctxs[k].setTransform(dpr, 0, 0, dpr, 0, 0); // set, never stack
+                });
+                touch();
             }
+
+            function draw() {
+                queued = false;
+                if (!dirty || !visible) return;
+                dirty = false;
+                var r = field.getBoundingClientRect();
+                var top = -r.top, bottom = -r.top + vh;
+                var y0 = Math.max(0, r.top), y1 = Math.min(vh, r.bottom);
+                ctxs.forEach(function (ctx) {
+                    ctx.clearRect(0, 0, vw, vh);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(r.left, y0, r.width, Math.max(0, y1 - y0));
+                    ctx.clip();
+                    ctx.translate(r.left, r.top);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = 'rgba(220,30,30,0.5)';
+                    ctx.beginPath();
+                });
+                for (var k = 0; k < connections.length; k++) {
+                    var conn = connections[k];
+                    var a = tileData[conn.a], b = tileData[conn.b];
+                    if (!a || !b) continue;
+                    // off-screen strings cost nothing
+                    if ((a.py < top && b.py < top) || (a.py > bottom && b.py > bottom)) continue;
+                    var ctx = ctxs[conn.g];
+                    ctx.moveTo(a.px, a.py);
+                    ctx.lineTo(b.px, b.py);
+                }
+                ctxs.forEach(function (ctx) { ctx.stroke(); ctx.restore(); });
+            }
+
+            function touch() {
+                dirty = true;
+                if (!queued) { queued = true; requestAnimationFrame(draw); }
+            }
+
+            // the wall scrolls under fixed canvases — redraw once per frame at most
+            window.addEventListener('scroll', touch, { passive: true });
+
+            if ('IntersectionObserver' in window) {
+                new IntersectionObserver(function (entries) {
+                    visible = entries[0].isIntersecting;
+                    document.body.classList.toggle('wall-offscreen', !visible);
+                    if (visible) touch();
+                }).observe(field);
+            }
+
             resizeCanvas();
 
-            var t = 0;
-            function draw() {
-                ctx.clearRect(0, 0, field.offsetWidth, field.offsetHeight);
-                t += 0.012;
-                ctx.lineWidth = 1.5;
-                connections.forEach(function (conn) {
-                    var ta = tiles[conn.a];
-                    var tb = tiles[conn.b];
-                    var x1 = ta.offsetLeft + ta.offsetWidth / 2;
-                    var y1 = ta.offsetTop + 4;
-                    var x2 = tb.offsetLeft + tb.offsetWidth / 2;
-                    var y2 = tb.offsetTop + 4;
-                    var alpha = 0.35 + Math.sin(t + conn.phase) * 0.15;
-                    ctx.beginPath();
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.strokeStyle = 'rgba(220,30,30,' + alpha.toFixed(3) + ')';
-                    ctx.stroke();
-                });
-                requestAnimationFrame(draw);
-            }
-            draw();
-            return resizeCanvas;
+            function setPaused(p) { document.body.classList.toggle('wall-paused', p); }
+            return {
+                resize: resizeCanvas,
+                pause: function () { setPaused(true); },
+                resume: function () { setPaused(false); touch(); },
+                touch: touch
+            };
         }
 
-        var refreshLines;
         scatter();
         initHover();
         initLightbox();
-        refreshLines = initConspiracy();
+        lines = initConspiracy();
 
         var resizeTimer;
         window.addEventListener('resize', function () {
+            if (lines) lines.resize(); // cheap: viewport-sized now
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(function () {
-                scatter();
-                if (refreshLines) refreshLines();
+                var fw = field.offsetWidth || window.innerWidth;
+                // height-only resizes (mobile url bar) keep the layout as is
+                if (fw !== lastW) { scatter(); if (lines) lines.touch(); }
             }, 150);
         });
     }
-
     /* ===================================================== */
     function boot() {
         injectChrome();

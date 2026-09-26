@@ -7,6 +7,12 @@
 
 :root { --accent: #33ff33; } /* menu hover / active colour */
 
+html {
+    /* the page doesn't jump sideways when the menu / cart / lightbox
+       locks scrolling and the scrollbar disappears */
+    scrollbar-gutter: stable;
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -169,7 +175,8 @@ body.menu-open .menu-toggle .bar:nth-child(2) { bottom: auto; top: 50%; transfor
     visibility: hidden;
     transition: opacity 0.28s ease, visibility 0.28s ease;
 }
-body.menu-open { overflow: hidden; }
+body.menu-open,
+body.lightbox-open { overflow: hidden; }
 body.menu-open .overlay-menu { opacity: 1; visibility: visible; }
 .overlay-menu a {
     font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
@@ -254,6 +261,7 @@ main.page {
 }
 .archive-wall .tile img {
     width: 100%;
+    height: auto;
     filter: grayscale(15%);
     transition: filter 0.2s ease, transform 0.2s ease;
 }
@@ -270,6 +278,10 @@ main.page {
 
 @media (max-width: 1000px) { .archive-wall { column-count: 3; } }
 @media (max-width: 680px)  { .archive-wall { column-count: 2; } }
+
+/* home: one piece, centred, pinned slightly crooked */
+.archive-wall.is-single { column-count: 1; max-width: 720px; margin: 0 auto; }
+.archive-wall.is-single .tile { transform: rotate(-1deg); }
 
 /* ===========================================================
    ARCHIVE PAGE — interactive scatter
@@ -297,15 +309,38 @@ main.page {
 .scatter-field {
     position: relative;
     width: 100%;
-    /* height injected by JS */
+    /* height injected by JS.
+       isolate: tile z-indexes (up to 200 on hover) stay inside the wall
+       instead of poking through the header, menu and cart */
+    isolation: isolate;
 }
 
-#conspiracy-lines {
-    position: absolute;
+/* viewport-sized and pinned — the wall scrolls over it, JS draws only
+   the strings on screen (see initConspiracy in site.js) */
+#conspiracy-lines,
+.conspiracy-layer {
+    position: fixed;
     top: 0; left: 0;
-    width: 100%; height: 100%;
+    width: 100vw; height: 100vh;
     pointer-events: none;
     z-index: 0;
+    /* the string breathes — compositor-only, three offset phases */
+    animation: string-breathe 4.2s ease-in-out infinite alternate;
+}
+.conspiracy-layer[data-phase="1"] { animation-duration: 5.1s; animation-delay: -1.7s; }
+.conspiracy-layer[data-phase="2"] { animation-duration: 3.6s; animation-delay: -2.9s; }
+@keyframes string-breathe {
+    from { opacity: 0.4; }
+    to   { opacity: 1; }
+}
+body.wall-paused #conspiracy-lines,
+body.wall-paused .conspiracy-layer,
+body.wall-offscreen #conspiracy-lines,
+body.wall-offscreen .conspiracy-layer { animation-play-state: paused; }
+body.wall-offscreen #conspiracy-lines,
+body.wall-offscreen .conspiracy-layer { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) {
+    #conspiracy-lines, .conspiracy-layer { animation: none; opacity: 0.7; }
 }
 
 .pin {
@@ -327,13 +362,19 @@ main.page {
     cursor: zoom-in;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
 }
+.scatter-tile:focus-visible img,
+.scatter-tile:focus-visible video { outline: 1px dashed var(--accent); outline-offset: 3px; }
 
 .scatter-tile img,
 .scatter-tile video {
     display: block;
     width: 100%;
-    box-shadow: 4px 6px 24px rgba(0,0,0,0.8);
+    /* tight shadow: same pinned-photo depth, a fraction of the paint cost
+       of the old 24px blur × 70-odd rotated tiles */
+    box-shadow: 3px 4px 8px rgba(0,0,0,0.85);
     border: 1px solid #1c1c1c;
     pointer-events: none;
     /* tiles are tiny thumbs blown up — keep the pixels hard, that's the point */
@@ -369,8 +410,15 @@ main.page {
     max-width: 90vw;
     max-height: 88vh;
     object-fit: contain;
+    touch-action: pan-y;
     box-shadow: 0 0 80px rgba(0,0,0,0.5);
     cursor: default;
+}
+/* the pixel thumb, blown up, while the real file loads — fog, then truth */
+.lightbox img.is-fog {
+    image-rendering: pixelated;
+    width: min(90vw, 88vh);
+    height: auto;
 }
 .lightbox iframe {
     display: none;
@@ -494,6 +542,14 @@ main.page {
     font-size: 12px;
     opacity: 0.4;
     letter-spacing: 0.04em;
+}
+
+/* keyboard users can see where they are, in the site's own green */
+a:focus-visible,
+button:focus-visible { outline: 1px dashed var(--accent); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
 
 /* ---------- small screens header ---------- */
