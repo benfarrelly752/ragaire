@@ -48,3 +48,8 @@ input {
 
 #game-text, input, button { box-sizing: border-box; }
 input:focus, button:focus-visible { outline: 1px dashed #33ff33; outline-offset: 3px; }
+
+/* 16px stops iPhones zooming the page when you tap the box */
+@media (hover: none) {
+    input, button { font-size: 16px; }
+}

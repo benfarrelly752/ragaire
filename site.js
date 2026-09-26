@@ -59,6 +59,7 @@
             '</button>' +
         '</header>' +
         '<nav class="overlay-menu" aria-label="Main menu">\n    ' + nav + '\n</nav>' +
+        '<div class="cart-scrim" aria-hidden="true"></div>' +
         '<aside class="cart-drawer" aria-label="Cart">' +
             '<div class="cart-head"><span>the damage</span>' +
             '<button class="cart-close" type="button" aria-label="Close cart">&#x2715;</button></div>' +
@@ -79,6 +80,10 @@
             renderCart();
         });
         document.querySelector('.cart-close').addEventListener('click', function () {
+            document.body.classList.remove('cart-open');
+        });
+        // tap anywhere off the drawer to put it away (phones have no Esc key)
+        document.querySelector('.cart-scrim').addEventListener('click', function () {
             document.body.classList.remove('cart-open');
         });
 
@@ -321,6 +326,10 @@
             im.src = full;
         }
 
+        // touch screens fake a mouseenter on tap and never send the leave,
+        // which left tiles stuck enlarged
+        var canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+
         function initHover() {
             tiles.forEach(function (tile, i) {
                 function lift() {
@@ -338,9 +347,15 @@
                     tile.style.transform = d.baseT;
                     tile.style.zIndex = d.z;
                 }
-                tile.addEventListener('mouseenter', lift);
-                tile.addEventListener('mouseleave', drop);
-                tile.addEventListener('focus', lift);
+                if (canHover) {
+                    tile.addEventListener('mouseenter', lift);
+                    tile.addEventListener('mouseleave', drop);
+                }
+                // keyboard focus lifts the tile; a tap's focus doesn't
+                tile.addEventListener('focus', function () {
+                    try { if (!tile.matches(':focus-visible')) return; } catch (e) {}
+                    lift();
+                });
                 tile.addEventListener('blur', drop);
             });
         }

@@ -76,6 +76,16 @@ img { display: block; max-width: 100%; }
     transition: transform 0.28s ease;
 }
 body.cart-open .cart-drawer { transform: none; }
+.cart-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 79;
+    background: rgba(0,0,0,0.6);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+body.cart-open .cart-scrim { opacity: 1; visibility: visible; }
 body.cart-open { overflow: hidden; }
 
 .cart-head {
@@ -543,6 +553,16 @@ body.wall-offscreen .conspiracy-layer { visibility: hidden; }
     opacity: 0.4;
     letter-spacing: 0.04em;
 }
+
+/* thumb-sized hit areas without changing how anything looks */
+.menu-toggle, .cart-link, .cart-close, .cart-item-qty button, .product .buy { position: relative; }
+.menu-toggle::after, .cart-link::after, .cart-close::after,
+.cart-item-qty button::after, .product .buy::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
+}
+.cart-item-qty button::after { inset: -9px; }
 
 /* keyboard users can see where they are, in the site's own green */
 a:focus-visible,
