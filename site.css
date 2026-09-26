@@ -564,6 +564,21 @@ body.wall-offscreen .conspiracy-layer { visibility: hidden; }
 }
 .cart-item-qty button::after { inset: -9px; }
 
+/* ---------- glitch (site.js §5) — rare, a blink, then gone ---------- */
+.brand img.glitch-flicker {
+    animation: glitch-flicker 0.2s steps(2, jump-none) infinite;
+}
+@keyframes glitch-flicker {
+    0%   { filter: invert(1);                        transform: translate(3px, -1px) skewX(-8deg); }
+    50%  { filter: invert(0) contrast(3); opacity: 0.2; transform: translate(-4px, 1px); }
+    100% { filter: invert(1) hue-rotate(90deg);      transform: translate(2px, 0) scaleX(-1); }
+}
+.archive-wall.is-single img.glitch-jolt {
+    transform: translateX(6px) skewX(2deg);
+    filter: invert(1) grayscale(1);
+    clip-path: inset(18% 0 34% 0);
+}
+
 /* keyboard users can see where they are, in the site's own green */
 a:focus-visible,
 button:focus-visible { outline: 1px dashed var(--accent); outline-offset: 3px; }

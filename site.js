@@ -15,6 +15,7 @@
      3. renderers  — shop grid + home latest-drop from products.js,
                      archive tiles from assets/manifest.js
      4. archive    — scatter layout, hover, lightbox, conspiracy lines
+     5. glitch     — rare, brief misbehaviour. did you see that
 */
 (function () {
     'use strict';
@@ -619,6 +620,79 @@
             }, 150);
         });
     }
+    /* =====================================================
+       5. GLITCH — the site misbehaves, rarely and briefly.
+          just often enough that you're not sure you saw it.
+          - logo flickers (every page)
+          - two archive tiles swap pictures for a blink
+          - the home image jolts sideways for a frame
+          first one no sooner than ~20s in, then every 40–150s,
+          only while the tab is visible. off for reduced-motion.
+          testing: add ?glitch to the url (every ~2s), or type
+          ragaire.glitch() in the console.
+       ===================================================== */
+    var glitchOften = /[?&]glitch\b/.test(location.search);
+
+    function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+    function flash(el, cls, ms) {
+        if (!el) return;
+        el.classList.add(cls);
+        setTimeout(function () { el.classList.remove(cls); }, ms);
+    }
+
+    function glitchLogo() {
+        flash(document.querySelector('.brand img'), 'glitch-flicker', 90 + Math.random() * 140);
+        return true;
+    }
+
+    function glitchSwap() {
+        if (document.body.classList.contains('lightbox-open')) return false;
+        // only tiles actually on screen — a glitch nobody sees is wasted
+        var onScreen = Array.prototype.filter.call(
+            document.querySelectorAll('.scatter-tile img'),
+            function (im) {
+                var r = im.getBoundingClientRect();
+                return r.bottom > 0 && r.top < innerHeight && r.width > 0;
+            });
+        if (onScreen.length < 2) return false;
+        var a = pick(onScreen), b = a;
+        while (b === a) b = pick(onScreen);
+        var sa = a.src, sb = b.src;
+        a.src = sb; b.src = sa;
+        setTimeout(function () { a.src = sa; b.src = sb; }, 120 + Math.random() * 260);
+        return true;
+    }
+
+    function glitchJolt() {
+        flash(document.querySelector('.archive-wall.is-single img'), 'glitch-jolt', 70 + Math.random() * 60);
+        return true;
+    }
+
+    function glitchOnce() {
+        var moves = [glitchLogo];
+        if (document.querySelector('.scatter-tile')) moves.push(glitchSwap, glitchSwap); // archive: mostly swaps
+        if (document.querySelector('.archive-wall.is-single')) moves.push(glitchJolt);
+        var move = pick(moves);
+        if (!move()) glitchLogo();
+    }
+
+    function scheduleGlitch(first) {
+        var wait = glitchOften
+            ? 1500 + Math.random() * 1500
+            : (first ? 20000 : 40000) + Math.random() * (first ? 40000 : 110000);
+        setTimeout(function () {
+            if (!document.hidden) glitchOnce();
+            scheduleGlitch(false);
+        }, wait);
+    }
+
+    function initGlitch() {
+        var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (calm && !glitchOften) return;
+        scheduleGlitch(true);
+    }
+
     /* ===================================================== */
     function boot() {
         injectChrome();
@@ -627,6 +701,7 @@
         renderLatestDrop();
         renderArchiveTiles();
         initArchive();
+        initGlitch();
     }
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot);
@@ -636,6 +711,7 @@
 
     // for the ones who look behind the curtain
     window.ragaire = {
+        glitch: function () { glitchOnce(); return 'did you see that'; },
         debts: function () {
             document.body.style.transition = 'filter 0.4s';
             document.body.style.filter = 'invert(1)';
