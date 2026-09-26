@@ -8,7 +8,15 @@ const gameState = {
 
 // Helper function to append text to game-text
 const appendToGameText = (text) => {
+    const box = document.getElementById('game-text');
     $('#game-text').append(`<p>${text}</p>`);
+    box.scrollTop = box.scrollHeight; // newest line always in view
+};
+
+// show what the player typed, like a proper terminal (escaped — it's their text)
+const echoCommand = (text) => {
+    const safe = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    appendToGameText(`<span class="echo">&gt; ${safe}</span>`);
 };
 
 // rooms are text. the pictures happen in your head. (an old /generate-image
@@ -82,8 +90,10 @@ function showInventory() {
 }
 
 function playerInput(input) {
-    const command = input.split(" ")[0];
-    const arg = input.split(" ")[1];
+    // tolerate double spaces: "go   kitchen" still goes to the kitchen
+    const parts = input.trim().split(/\s+/);
+    const command = parts[0];
+    const arg = parts[1];
     switch (command) {
         case "go":
             changeRoom(arg);
@@ -119,9 +129,11 @@ $(document).ready(function() {
 
     $(document).keypress(function(key) {
         if (key.which === 13 && $('#user-input').is(':focus')) {
-            const value = $('#user-input').val().toLowerCase();
+            const raw = $('#user-input').val().trim();
             $('#user-input').val("");
-            playerInput(value);
+            if (!raw) return;
+            echoCommand(raw);
+            playerInput(raw.toLowerCase());
         }
     });
 });

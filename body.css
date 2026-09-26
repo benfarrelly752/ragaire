@@ -3,7 +3,8 @@ body {
     flex-direction: column; /* Changes layout to vertical stacking */
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
+    min-height: 100dvh;
     width: 100%;
     margin: 0;
     background-color: black;
@@ -22,7 +23,14 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 255, 0, 0.3);
     overflow-y: auto;
+    /* the story scrolls inside its box — the old full-height centred body
+       pushed the start of the text off the top where you couldn't reach it */
+    max-height: 60vh;
+    max-height: 60dvh;
+    overscroll-behavior: contain;
 }
+
+#game-text .echo { opacity: 0.55; }
 
 input, button {
     font-family: 'Courier New', Courier, monospace;
@@ -36,4 +44,12 @@ input, button {
 
 input {
     margin-bottom: 10px;  /* Separates the input from the button */
+}
+
+#game-text, input, button { box-sizing: border-box; }
+input:focus, button:focus-visible { outline: 1px dashed #33ff33; outline-offset: 3px; }
+
+/* 16px stops iPhones zooming the page when you tap the box */
+@media (hover: none) {
+    input, button { font-size: 16px; }
 }

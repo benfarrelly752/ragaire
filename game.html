@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ragaire — escape the afters</title>
+    <meta name="description" content="escape the afters — a text adventure. you wake up on a couch. good luck.">
     <link rel="shortcut icon" href="assets/web/logo.gif" />
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="body.css">
@@ -21,10 +22,10 @@
             background: rgba(0,0,0,0.85);
             z-index: 10;
         }
-        .game-nav a { color: #33ff33; text-decoration: none; }
+        .game-nav a { color: #33ff33; text-decoration: none; padding: 10px 2px; }
         .game-nav a:hover { text-decoration: underline; }
         .game-nav img { height: 22px; image-rendering: pixelated; filter: invert(1); }
-        body { padding-top: 56px; }
+        body { padding-top: 56px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -38,7 +39,7 @@
 <main id="game-text">
     <h1 id="game-title">ESCAPE THE AFTERS</h1>
 </main>
-<input id="user-input" type="text" placeholder="Please type your command..." aria-label="Enter your command here">
+<input id="user-input" type="text" placeholder="Please type your command..." aria-label="Enter your command here" autocomplete="off" autocapitalize="off" spellcheck="false">
 <button onclick="submitCommand()" aria-label="Submit your command">Submit</button>
 <p>Type <b>help</b> for possible commands, use the commands in <b>bold</b> to progress</p>
 <script src="jquery-3.6.0.min.js"></script>
@@ -46,9 +47,15 @@
 <script src="conversations.js"></script>
 <script src="script.js"></script>
 <script>
+// desktop: cursor straight in the box. phones: let them read the intro
+// before the keyboard eats half the screen
+if (window.matchMedia && window.matchMedia('(hover: hover)').matches) {
+    document.getElementById('user-input').focus();
+}
 function submitCommand() {
     var input = $('#user-input').val().trim();
     if (input !== "") {
+        echoCommand(input);
         playerInput(input.toLowerCase());
         $('#user-input').val(''); // Clearing the input field after processing
     }
