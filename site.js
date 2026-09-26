@@ -257,6 +257,14 @@
         var lastW = 0;          // only re-scatter when the WIDTH changes — mobile
                                 // url bars fire resize on every scroll otherwise
         var lines = null;       // conspiracy-line controller (set below)
+        var DX = [], DY = [], DR = [];   // current drift offset per tile (px, px, deg)
+        var hovered = {};                // tiles under the cursor stop drifting
+        function tf(i, scale) {
+            var d = tileData[i];
+            return 'translate(' + (DX[i] || 0).toFixed(1) + 'px,' + (DY[i] || 0).toFixed(1) + 'px) ' +
+                d.baseT + (DR[i] ? ' rotate(' + DR[i].toFixed(2) + 'deg)' : '') +
+                (scale ? ' scale(' + scale + ')' : '');
+        }
 
         tiles.forEach(function (tile) {
             tile.setAttribute('tabindex', '0');
@@ -336,16 +344,18 @@
                 function lift() {
                     var d = tileData[i];
                     if (!d) return;
+                    hovered[i] = true;
                     tile.style.transition = 'transform 0.18s ease';
-                    tile.style.transform = d.baseT + ' scale(1.06)';
-                    tile.style.zIndex = 200;
+                    tile.style.transform = tf(i, 1.06);
+                    tile.style.zIndex = 100000;
                     warm(tile);
                 }
                 function drop() {
                     var d = tileData[i];
                     if (!d) return;
+                    hovered[i] = false;
                     tile.style.transition = 'transform 0.18s ease';
-                    tile.style.transform = d.baseT;
+                    tile.style.transform = tf(i);
                     tile.style.zIndex = d.z;
                 }
                 if (canHover) {
@@ -571,8 +581,8 @@
                     // off-screen strings cost nothing
                     if ((a.py < top && b.py < top) || (a.py > bottom && b.py > bottom)) continue;
                     var ctx = ctxs[conn.g];
-                    ctx.moveTo(a.px, a.py);
-                    ctx.lineTo(b.px, b.py);
+                    ctx.moveTo(a.px + (DX[conn.a] || 0), a.py + (DY[conn.a] || 0));
+                    ctx.lineTo(b.px + (DX[conn.b] || 0), b.py + (DY[conn.b] || 0));
                 }
                 ctxs.forEach(function (ctx) { ctx.stroke(); ctx.restore(); });
             }
@@ -604,10 +614,91 @@
             };
         }
 
+
+        /* the wall is alive. every tile wanders slowly on its own lazy loop,
+           and every few seconds one surfaces over its neighbours (or sinks
+           under them). cheap on purpose: JS only sets a new target 5x a
+           second for tiles near the screen; the browser's compositor glides
+           between targets. the string redraws on the same beat — tiles move
+           a pixel or two per beat, so the pins never visibly come loose. */
+        function initDrift() {
+            var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (calm) return;
+            var STEP = 200; // ms between targets
+            var rnd = makeRng(99);
+            var P = tiles.map(function () {
+                return {
+                    ax: 0, ay: 0,                          // amplitude, set per layout below
+                    fx: 1 / (25 + rnd() * 45),             // cycles per second (25–70s loops)
+                    fy: 1 / (25 + rnd() * 45),
+                    px: rnd() * Math.PI * 2, py: rnd() * Math.PI * 2,
+                    fr: 1 / (30 + rnd() * 40), pr: rnd() * Math.PI * 2,
+                    k: 0.5 + rnd()                         // how restless this one is
+                };
+            });
+            function amplitudes() {
+                var small = (field.offsetWidth || innerWidth) < 600;
+                P.forEach(function (p) {
+                    p.ax = (small ? 14 : 34) * p.k;
+                    p.ay = (small ? 18 : 26) * p.k;
+                });
+            }
+            amplitudes();
+            tiles.forEach(function (t) { t.style.willChange = 'transform'; });
+
+            var topZ = tiles.length + 1;
+            var t0 = performance.now();
+            var nextShuffle = 0;
+
+            function near(i) {
+                var d = tileData[i];
+                if (!d) return false;
+                var r = field.getBoundingClientRect();
+                var y = r.top + d.py;
+                return y > -400 && y < innerHeight + 400;
+            }
+
+            function beat() {
+                if (document.hidden || document.body.classList.contains('lightbox-open') ||
+                    document.body.classList.contains('wall-offscreen')) return;
+                var s = (performance.now() - t0 + STEP) / 1000; // aim where we'll be at the next beat
+                var moved = false;
+                for (var i = 0; i < tiles.length; i++) {
+                    if (hovered[i] || !near(i)) continue;
+                    var p = P[i];
+                    DX[i] = Math.sin(s * p.fx * 2 * Math.PI + p.px) * p.ax;
+                    DY[i] = Math.sin(s * p.fy * 2 * Math.PI + p.py) * p.ay;
+                    DR[i] = Math.sin(s * p.fr * 2 * Math.PI + p.pr) * 2.5 * p.k;
+                    tiles[i].style.transition = 'transform ' + STEP + 'ms linear';
+                    tiles[i].style.transform = tf(i);
+                    moved = true;
+                }
+                if (moved && lines) lines.touch();
+
+                // now and then, one surfaces or sinks
+                var now = performance.now();
+                if (now > nextShuffle) {
+                    nextShuffle = now + 2500 + Math.random() * 4000;
+                    var pool = [];
+                    for (var j = 0; j < tiles.length; j++) if (!hovered[j] && near(j)) pool.push(j);
+                    if (pool.length) {
+                        var n = pool[Math.floor(Math.random() * pool.length)];
+                        var z = Math.random() < 0.75 ? ++topZ : 1; // mostly rise, sometimes drown
+                        tileData[n].z = z;
+                        tiles[n].style.zIndex = z;
+                    }
+                }
+            }
+            setInterval(beat, STEP);
+            beat();
+            return amplitudes;
+        }
+
         scatter();
         initHover();
         initLightbox();
         lines = initConspiracy();
+        var reDrift = initDrift();
 
         var resizeTimer;
         window.addEventListener('resize', function () {
@@ -616,7 +707,7 @@
             resizeTimer = setTimeout(function () {
                 var fw = field.offsetWidth || window.innerWidth;
                 // height-only resizes (mobile url bar) keep the layout as is
-                if (fw !== lastW) { scatter(); if (lines) lines.touch(); }
+                if (fw !== lastW) { scatter(); if (reDrift) reDrift(); if (lines) lines.touch(); }
             }, 150);
         });
     }
