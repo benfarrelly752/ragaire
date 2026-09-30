@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "title":   { "type": ["string", "null"] },
+    "author":  { "type": ["string", "null"] },
+    "source":  { "type": ["string", "null"], "description": "site name, e.g. kenney, poly haven, sketchfab" },
+    "url":     { "type": ["string", "null"] },
+    "license": { "type": ["string", "null"], "description": "verbatim licence name, e.g. CC0 1.0, CC BY 4.0, CC BY-NC 4.0" },
+    "attribution_required": { "type": ["boolean", "null"] },
+    "noncommercial": { "type": ["boolean", "null"] },
+    "noderivatives": { "type": ["boolean", "null"] }
+  },
+  "required": ["title", "author", "source", "url", "license", "attribution_required", "noncommercial", "noderivatives"]
+}
